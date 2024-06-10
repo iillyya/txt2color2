@@ -50,23 +50,31 @@ args_d = {
 args = Args(args_d)
 solver = Solver(args)
 
-
+device = torch.device('cpu')
 
     
     
 @app.route('/generate_palette', methods=['GET'])
-def generate_palette(txt):
+def generate_palette(solver, txt):
+    solver.encoder.eval()
     solver.G_TPN.eval()
-    with torch.no_grad():
-    colors = []
+    
+    encoder_hidden = solver.encoder.init_hidden(batch_size=1).to(device)
+    palette = torch.FloatTensor(1, 3).zero_().to(device)
+    input_size = len(txt[0])
 
-    for i in range(4):
-        palette, _ , decoder_hidden, _ = solver.G_TPN(
-            palette, decoder_hidden.squeeze(0), encoder_outputs, input_size, i
-        )
-        palette_np = palette.cpu().detach().numpy()
-        palette_rgb = lab2rgb(palette.cpu().detach().numpy()) * 255.0
-        colors.append(palette_rgb)
+    encoder_outputs, decoder_hidden, mu, logvar = solver.encoder(get_ind(solver, txt), encoder_hidden)
+    
+    with torch.no_grad():
+        colors = []
+
+        for i in range(4):
+	    palette, _ , decoder_hidden, _ = solver.G_TPN(
+	        palette, decoder_hidden.squeeze(0), encoder_outputs, input_size, i
+	    )
+	    palette_np = palette.cpu().detach().numpy()
+	    palette_rgb = lab2rgb(palette.cpu().detach().numpy()) * 255.0
+	    colors.append(palette_rgb)
     
     return jsonify(colors)
     
