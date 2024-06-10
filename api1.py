@@ -21,6 +21,15 @@ def get_ind(solver, src_seqs):
     src_seqs = torch.LongTensor(words_index).to(device)
     
     return src_seqs
+    
+    
+def rgb_to_hex(r, g, b):
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+
+def convert_rgb_list_to_hex_list(rgb_list):
+    hex_list = [rgb_to_hex(r, g, b) for r, g, b in rgb_list]
+    return hex_list
+    
 
 args_d = {
     'hidden_size':150,
@@ -55,7 +64,9 @@ device = torch.device('cpu')
     
     
 @app.route('/generate_palette', methods=['GET'])
-def generate_palette(solver, txt):
+def generate_palette():
+    txt = request.json.get('input')
+   
     solver.encoder.eval()
     solver.G_TPN.eval()
     
@@ -76,7 +87,7 @@ def generate_palette(solver, txt):
 	    palette_rgb = lab2rgb(palette.cpu().detach().numpy()) * 255.0
 	    colors.append(palette_rgb)
     
-    return jsonify(colors)
+    return jsonify(convert_rgb_list_to_hex_list(colors))
     
     
 if __name__ == '__main__':
